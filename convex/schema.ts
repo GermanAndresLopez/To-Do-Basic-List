@@ -8,7 +8,12 @@ export default defineSchema({
   tasks: defineTable({
     projectId: v.id("projects"),
     name: v.string(),
-  }).index("by_project", ["projectId"]),
+    // Sequential, human-readable id scoped to its project (1, 2, 3...).
+    // Optional so existing rows stay valid until they are backfilled.
+    number: v.optional(v.number()),
+  })
+    .index("by_project", ["projectId"])
+    .index("by_project_number", ["projectId", "number"]),
   subtasks: defineTable({
     taskId: v.id("tasks"),
     name: v.string(),
