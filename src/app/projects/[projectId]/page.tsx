@@ -10,6 +10,7 @@ import { Id } from "../../../../convex/_generated/dataModel";
 import { ProgressBar } from "@/components/ProgressBar";
 import { TaskCard } from "@/components/TaskCard";
 import { ChevronLeftIcon, PlusIcon } from "@/components/icons";
+import { useAdminSession } from "@/lib/useAdminSession";
 
 export default function ProjectPage() {
   const params = useParams<{ projectId: string }>();
@@ -18,6 +19,7 @@ export default function ProjectPage() {
   const project = useQuery(api.projects.get, { projectId });
   const tasks = useQuery(api.tasks.listByProject, { projectId });
   const createTask = useMutation(api.tasks.create);
+  const { isAdmin, token: adminToken } = useAdminSession();
   const [taskName, setTaskName] = useState("");
 
   async function handleAddTask(e: FormEvent) {
@@ -122,7 +124,13 @@ export default function ProjectPage() {
             </motion.li>
           )}
           {tasks.map((task, index) => (
-            <TaskCard key={task._id} task={task} colorIndex={index} />
+            <TaskCard
+              key={task._id}
+              task={task}
+              colorIndex={index}
+              isAdmin={isAdmin}
+              adminToken={adminToken}
+            />
           ))}
         </AnimatePresence>
       </ul>

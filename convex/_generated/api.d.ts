@@ -8,7 +8,10 @@
  * @module
  */
 
+import type * as admin from "../admin.js";
+import type * as deliverables from "../deliverables.js";
 import type * as projects from "../projects.js";
+import type * as sharepoint from "../sharepoint.js";
 import type * as subtasks from "../subtasks.js";
 import type * as tasks from "../tasks.js";
 
@@ -19,7 +22,10 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  admin: typeof admin;
+  deliverables: typeof deliverables;
   projects: typeof projects;
+  sharepoint: typeof sharepoint;
   subtasks: typeof subtasks;
   tasks: typeof tasks;
 }>;

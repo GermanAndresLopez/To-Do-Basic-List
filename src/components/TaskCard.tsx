@@ -15,13 +15,25 @@ import {
   PlusIcon,
   TrashIcon,
 } from "@/components/icons";
+import { SubtaskDeliverable } from "@/components/SubtaskDeliverable";
 import { getTaskColor } from "@/lib/taskColors";
 import { getPersonColor, parseSubtaskName } from "@/lib/subtaskFormat";
 import { playCelebrationSound, playCheckSound } from "@/lib/sound";
 import { useJustCompleted } from "@/lib/useJustCompleted";
 
+type SubtaskWithAttachment = Doc<"subtasks"> & {
+  attachment: {
+    _id: Id<"attachments">;
+    fileName: string;
+    size: number;
+    syncStatus: string;
+    syncFolder?: "Revision" | "Finales";
+    url: string | null;
+  } | null;
+};
+
 type TaskWithSubtasks = Doc<"tasks"> & {
-  subtasks: Doc<"subtasks">[];
+  subtasks: SubtaskWithAttachment[];
   totalSubtasks: number;
   completedSubtasks: number;
 };
@@ -29,9 +41,13 @@ type TaskWithSubtasks = Doc<"tasks"> & {
 export function TaskCard({
   task,
   colorIndex,
+  isAdmin,
+  adminToken,
 }: {
   task: TaskWithSubtasks;
   colorIndex: number;
+  isAdmin: boolean;
+  adminToken: string | null;
 }) {
   const toggleSubtask = useMutation(api.subtasks.toggle);
   const removeSubtask = useMutation(api.subtasks.remove);
@@ -273,6 +289,14 @@ export function TaskCard({
                                   })}
                                 </div>
                               )}
+                              <SubtaskDeliverable
+                                subtaskId={subtask._id}
+                                status={subtask.status}
+                                feedback={subtask.feedback}
+                                attachment={subtask.attachment}
+                                isAdmin={isAdmin}
+                                adminToken={adminToken}
+                              />
                             </>
                           )}
                         </div>

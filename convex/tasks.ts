@@ -1,5 +1,50 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { Doc, Id } from "./_generated/dataModel";
+import { mutation, query, QueryCtx } from "./_generated/server";
+
+/** Subtasks plus the deliverable currently under review, if any. */
+async function subtasksWithAttachments(ctx: QueryCtx, taskId: Id<"tasks">) {
+  const subtasks = await ctx.db
+    .query("subtasks")
+    .withIndex("by_task", (q) => q.eq("taskId", taskId))
+    .order("asc")
+    .collect();
+
+  return Promise.all(
+    subtasks.map(async (subtask) => {
+      const attachment = await ctx.db
+        .query("attachments")
+        .withIndex("by_subtask", (q) => q.eq("subtaskId", subtask._id))
+        .filter((q) => q.eq(q.field("active"), true))
+        .unique();
+
+      return {
+        ...subtask,
+        attachment: attachment
+          ? {
+              _id: attachment._id,
+              fileName: attachment.fileName,
+              size: attachment.size,
+              syncStatus: attachment.syncStatus,
+              syncFolder: attachment.syncFolder,
+              url: await ctx.storage.getUrl(attachment.storageId),
+            }
+          : null,
+      };
+    })
+  );
+}
+
+export type SubtaskWithAttachment = Doc<"subtasks"> & {
+  attachment: {
+    _id: Id<"attachments">;
+    fileName: string;
+    size: number;
+    syncStatus: string;
+    syncFolder?: "Revision" | "Finales";
+    url: string | null;
+  } | null;
+};
 
 export const listByProject = query({
   args: { projectId: v.id("projects") },
@@ -12,11 +57,7 @@ export const listByProject = query({
 
     return Promise.all(
       tasks.map(async (task) => {
-        const subtasks = await ctx.db
-          .query("subtasks")
-          .withIndex("by_task", (q) => q.eq("taskId", task._id))
-          .order("asc")
-          .collect();
+        const subtasks = await subtasksWithAttachments(ctx, task._id);
         return {
           ...task,
           subtasks,
@@ -40,11 +81,7 @@ export const getByNumber = query({
       .unique();
     if (!task) return null;
 
-    const subtasks = await ctx.db
-      .query("subtasks")
-      .withIndex("by_task", (q) => q.eq("taskId", task._id))
-      .order("asc")
-      .collect();
+    const subtasks = await subtasksWithAttachments(ctx, task._id);
 
     return {
       ...task,
