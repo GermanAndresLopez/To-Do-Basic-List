@@ -54,6 +54,49 @@ export function StatusBadge({
   );
 }
 
+/** Same amber as the "En revisión" badge, so every signal reads as one idea. */
+export const REVIEW_DOT = "#E8890C";
+
+/**
+ * Marks anything holding a deliverable that is waiting on review. It pulses so
+ * the pending item is findable without opening or scanning the card.
+ */
+export function ReviewDot({
+  pending,
+  color,
+  size = 10,
+}: {
+  pending: boolean;
+  /** Resting colour when nothing is pending; omit to hide the dot entirely. */
+  color?: string;
+  size?: number;
+}) {
+  if (!pending && !color) return null;
+
+  return (
+    <span
+      className="relative flex shrink-0"
+      style={{ height: size, width: size }}
+      title={pending ? "Entrega esperando revisión" : undefined}
+    >
+      {pending && (
+        <span
+          className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60"
+          style={{ backgroundColor: REVIEW_DOT }}
+        />
+      )}
+      <span
+        className="relative inline-flex rounded-full"
+        style={{
+          height: size,
+          width: size,
+          backgroundColor: pending ? REVIEW_DOT : color,
+        }}
+      />
+    </span>
+  );
+}
+
 /** Count of deliverables waiting on the admin, shown on a deliverable header. */
 export function PendingCountBadge({ count }: { count: number }) {
   if (count === 0) return null;

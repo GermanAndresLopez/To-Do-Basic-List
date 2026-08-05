@@ -16,14 +16,11 @@ import {
   TrashIcon,
 } from "@/components/icons";
 import { SubtaskDeliverable } from "@/components/SubtaskDeliverable";
-import { PendingCountBadge } from "@/components/StatusBadge";
+import { PendingCountBadge, ReviewDot } from "@/components/StatusBadge";
 import { getTaskColor } from "@/lib/taskColors";
 import { PERSON_CHIP_CLASS, parseSubtaskName } from "@/lib/subtaskFormat";
 import { playCelebrationSound, playCheckSound } from "@/lib/sound";
 import { useJustCompleted } from "@/lib/useJustCompleted";
-
-/** Same amber as the "En revisión" badge, so the signals read as one idea. */
-const REVIEW_DOT = "#E8890C";
 
 type SubtaskWithAttachment = Doc<"subtasks"> & {
   attachment: {
@@ -152,19 +149,8 @@ export function TaskCard({
             aria-expanded={expanded}
             className="flex flex-1 items-start gap-3 text-left"
           >
-            <span className="relative mt-1.5 flex h-2.5 w-2.5 shrink-0">
-              {hasPendingReview && (
-                <span
-                  className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60"
-                  style={{ backgroundColor: REVIEW_DOT }}
-                />
-              )}
-              <span
-                className="relative inline-flex h-2.5 w-2.5 rounded-full"
-                style={{
-                  backgroundColor: hasPendingReview ? REVIEW_DOT : color.dot,
-                }}
-              />
+            <span className="mt-1.5">
+              <ReviewDot pending={hasPendingReview} color={color.dot} />
             </span>
             <span className="flex-1">
               <h3 className="text-[15px] font-semibold leading-tight text-ink">
@@ -278,14 +264,21 @@ export function TaskCard({
                             />
                           ) : (
                             <>
-                              <span
-                                className={`text-[14px] transition-colors duration-200 ${
-                                  subtask.completed
-                                    ? "text-ink-tertiary line-through"
-                                    : "text-ink"
-                                }`}
-                              >
-                                {text}
+                              <span className="flex items-start gap-1.5">
+                                {subtask.status === "revision" && (
+                                  <span className="mt-[6px]">
+                                    <ReviewDot pending size={8} />
+                                  </span>
+                                )}
+                                <span
+                                  className={`text-[14px] transition-colors duration-200 ${
+                                    subtask.completed
+                                      ? "text-ink-tertiary line-through"
+                                      : "text-ink"
+                                  }`}
+                                >
+                                  {text}
+                                </span>
                               </span>
                               {people.length > 0 && (
                                 <div className="mt-1 flex flex-wrap gap-1">
