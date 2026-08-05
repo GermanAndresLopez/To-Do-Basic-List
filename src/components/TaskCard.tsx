@@ -58,12 +58,16 @@ export function TaskCard({
   const removeTask = useMutation(api.tasks.remove);
 
   const [expanded, setExpanded] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
+  const [editingRequested, setIsEditing] = useState(false);
   const [subtaskText, setSubtaskText] = useState("");
   const [subtaskResponsible, setSubtaskResponsible] = useState("");
   const [confirmDeleteTask, setConfirmDeleteTask] = useState(false);
   const [pendingDeleteSubtaskId, setPendingDeleteSubtaskId] =
     useState<Id<"subtasks"> | null>(null);
+
+  // Editing is an admin-only mode; a session can expire mid-edit, so it is
+  // derived rather than trusted from local state alone.
+  const isEditing = isAdmin && editingRequested;
 
   const isComplete =
     task.totalSubtasks > 0 && task.completedSubtasks === task.totalSubtasks;
@@ -181,25 +185,27 @@ export function TaskCard({
             />
           </button>
         )}
-        <button
-          type="button"
-          onClick={() => {
-            if (isEditing) {
-              setIsEditing(false);
-            } else {
-              setIsEditing(true);
-              setExpanded(true);
-            }
-          }}
-          aria-label={isEditing ? "Terminar edición" : "Editar entregable"}
-          className="shrink-0 rounded-full p-1.5 text-ink-tertiary transition-colors duration-150 hover:bg-surface hover:text-ink active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
-        >
-          {isEditing ? (
-            <CheckIcon className="h-4 w-4" />
-          ) : (
-            <PencilIcon className="h-4 w-4" />
-          )}
-        </button>
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={() => {
+              if (isEditing) {
+                setIsEditing(false);
+              } else {
+                setIsEditing(true);
+                setExpanded(true);
+              }
+            }}
+            aria-label={isEditing ? "Terminar edición" : "Editar entregable"}
+            className="shrink-0 rounded-full p-1.5 text-ink-tertiary transition-colors duration-150 hover:bg-surface hover:text-ink active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+          >
+            {isEditing ? (
+              <CheckIcon className="h-4 w-4" />
+            ) : (
+              <PencilIcon className="h-4 w-4" />
+            )}
+          </button>
+        )}
       </div>
 
       {isEditing && (
