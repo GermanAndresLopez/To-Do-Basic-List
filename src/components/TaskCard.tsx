@@ -26,8 +26,6 @@ type SubtaskWithAttachment = Doc<"subtasks"> & {
     _id: Id<"attachments">;
     fileName: string;
     size: number;
-    syncStatus: string;
-    syncFolder?: "Revision" | "Finales";
     url: string | null;
   } | null;
 };

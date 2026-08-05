@@ -25,8 +25,6 @@ async function subtasksWithAttachments(ctx: QueryCtx, taskId: Id<"tasks">) {
               _id: attachment._id,
               fileName: attachment.fileName,
               size: attachment.size,
-              syncStatus: attachment.syncStatus,
-              syncFolder: attachment.syncFolder,
               url: await ctx.storage.getUrl(attachment.storageId),
             }
           : null,
@@ -40,8 +38,6 @@ export type SubtaskWithAttachment = Doc<"subtasks"> & {
     _id: Id<"attachments">;
     fileName: string;
     size: number;
-    syncStatus: string;
-    syncFolder?: "Revision" | "Finales";
     url: string | null;
   } | null;
 };

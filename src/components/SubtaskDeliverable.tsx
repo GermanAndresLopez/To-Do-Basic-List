@@ -14,10 +14,30 @@ type Attachment = {
   _id: Id<"attachments">;
   fileName: string;
   size: number;
-  syncStatus: string;
-  syncFolder?: "Revision" | "Finales";
   url: string | null;
 };
+
+/**
+ * Convex serves files from another origin, where the `download` attribute is
+ * ignored, so the blob is pulled down first to force a real save dialog.
+ */
+async function downloadFile(url: string, fileName: string) {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error("No se pudo descargar");
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(objectUrl);
+  } catch {
+    window.open(url, "_blank", "noopener");
+  }
+}
 
 const STATUS_STYLES = {
   revision: { label: "En revisión", bg: "#FFF4E8", text: "#B4560B" },
@@ -106,6 +126,10 @@ export function SubtaskDeliverable({
     try {
       await approve({ token: adminToken, subtaskId });
       playCheckSound();
+      // The reviewer keeps a copy of every deliverable they sign off on.
+      if (attachment?.url) {
+        await downloadFile(attachment.url, attachment.fileName);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo aprobar");
     } finally {
@@ -139,32 +163,21 @@ export function SubtaskDeliverable({
         {status && <StatusBadge status={status} />}
 
         {attachment && (
-          <a
-            href={attachment.url ?? "#"}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex max-w-full items-center gap-1 rounded-full bg-surface px-2 py-0.5 text-[11px] font-medium text-accent transition-colors duration-150 hover:bg-surface-hover"
+          <button
+            type="button"
+            onClick={() => {
+              if (attachment.url) {
+                downloadFile(attachment.url, attachment.fileName);
+              }
+            }}
+            className="inline-flex max-w-full items-center gap-1 rounded-full bg-surface px-2 py-0.5 text-[11px] font-medium text-accent transition-colors duration-150 hover:bg-surface-hover active:scale-[0.97]"
           >
             <PaperclipIcon className="h-3 w-3 shrink-0" />
             <span className="truncate">{attachment.fileName}</span>
             <span className="shrink-0 text-ink-tertiary">
               ({formatSize(attachment.size)})
             </span>
-          </a>
-        )}
-
-        {attachment?.syncStatus === "sin_configurar" && (
-          <span className="text-[11px] text-ink-tertiary">
-            SharePoint sin configurar
-          </span>
-        )}
-        {attachment?.syncStatus === "error" && (
-          <span className="text-[11px] text-danger">Error al sincronizar</span>
-        )}
-        {attachment?.syncStatus === "enviado" && attachment.syncFolder && (
-          <span className="text-[11px] text-ink-tertiary">
-            En SharePoint / {attachment.syncFolder}
-          </span>
+          </button>
         )}
 
         {canUpload && (

@@ -1,12 +1,5 @@
 import { v } from "convex/values";
-import { internal } from "./_generated/api";
-import { Doc } from "./_generated/dataModel";
-import {
-  internalMutation,
-  internalQuery,
-  mutation,
-  query,
-} from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 import { requireAdmin } from "./admin";
 
 const ALLOWED_EXTENSIONS = [
@@ -64,18 +57,12 @@ export const attach = mutation({
       contentType: args.contentType,
       size: args.size,
       active: true,
-      syncStatus: "pendiente",
     });
 
     await ctx.db.patch(args.subtaskId, {
       status: "revision",
       completed: false,
       feedback: undefined,
-    });
-
-    await ctx.scheduler.runAfter(0, internal.sharepoint.upload, {
-      attachmentId,
-      folder: "Revision",
     });
 
     return attachmentId;
@@ -100,19 +87,6 @@ export const approve = mutation({
       completed: true,
       feedback: undefined,
     });
-
-    const attachment = await ctx.db
-      .query("attachments")
-      .withIndex("by_subtask", (q) => q.eq("subtaskId", subtaskId))
-      .filter((q) => q.eq(q.field("active"), true))
-      .unique();
-
-    if (attachment) {
-      await ctx.scheduler.runAfter(0, internal.sharepoint.upload, {
-        attachmentId: attachment._id,
-        folder: "Finales",
-      });
-    }
   },
 });
 
@@ -161,32 +135,5 @@ export const reset = mutation({
       feedback: undefined,
       completed: false,
     });
-  },
-});
-
-// --- helpers used by the SharePoint action -------------------------------
-
-export const getAttachment = internalQuery({
-  args: { attachmentId: v.id("attachments") },
-  handler: async (ctx, { attachmentId }): Promise<Doc<"attachments"> | null> =>
-    await ctx.db.get(attachmentId),
-});
-
-export const recordSync = internalMutation({
-  args: {
-    attachmentId: v.id("attachments"),
-    syncStatus: v.union(
-      v.literal("pendiente"),
-      v.literal("enviado"),
-      v.literal("error"),
-      v.literal("sin_configurar")
-    ),
-    syncFolder: v.optional(
-      v.union(v.literal("Revision"), v.literal("Finales"))
-    ),
-    syncError: v.optional(v.string()),
-  },
-  handler: async (ctx, { attachmentId, syncStatus, syncFolder, syncError }) => {
-    await ctx.db.patch(attachmentId, { syncStatus, syncFolder, syncError });
   },
 });

@@ -41,17 +41,6 @@ export default defineSchema({
     // Only the newest upload for a subtask is active; older ones are kept
     // as history so a returned deliverable can still be looked up.
     active: v.boolean(),
-    // Mirror of the file in the shared SharePoint folders.
-    syncStatus: v.union(
-      v.literal("pendiente"),
-      v.literal("enviado"),
-      v.literal("error"),
-      v.literal("sin_configurar")
-    ),
-    syncFolder: v.optional(
-      v.union(v.literal("Revision"), v.literal("Finales"))
-    ),
-    syncError: v.optional(v.string()),
   }).index("by_subtask", ["subtaskId"]),
   adminSessions: defineTable({
     token: v.string(),
