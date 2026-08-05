@@ -59,6 +59,7 @@ export const listByProject = query({
           subtasks,
           totalSubtasks: subtasks.length,
           completedSubtasks: subtasks.filter((s) => s.completed).length,
+          pendingReview: subtasks.filter((s) => s.status === "revision").length,
         };
       })
     );
@@ -84,6 +85,7 @@ export const getByNumber = query({
       subtasks,
       totalSubtasks: subtasks.length,
       completedSubtasks: subtasks.filter((s) => s.completed).length,
+      pendingReview: subtasks.filter((s) => s.status === "revision").length,
     };
   },
 });

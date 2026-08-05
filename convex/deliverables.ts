@@ -74,6 +74,41 @@ export const fileUrl = query({
   handler: async (ctx, { storageId }) => await ctx.storage.getUrl(storageId),
 });
 
+/**
+ * Every file ever uploaded, newest first, with the subtask and deliverable it
+ * belongs to. Superseded uploads are kept so the admin can trace what changed.
+ */
+export const history = query({
+  args: { token: v.string() },
+  handler: async (ctx, { token }) => {
+    await requireAdmin(ctx, token);
+
+    const attachments = await ctx.db.query("attachments").order("desc").collect();
+
+    return Promise.all(
+      attachments.map(async (attachment) => {
+        const subtask = await ctx.db.get(attachment.subtaskId);
+        const task = subtask ? await ctx.db.get(subtask.taskId) : null;
+
+        return {
+          _id: attachment._id,
+          fileName: attachment.fileName,
+          contentType: attachment.contentType,
+          size: attachment.size,
+          uploadedAt: attachment._creationTime,
+          isCurrent: attachment.active,
+          url: await ctx.storage.getUrl(attachment.storageId),
+          subtaskId: attachment.subtaskId,
+          subtaskName: subtask?.name ?? "(subtarea eliminada)",
+          subtaskStatus: subtask?.status,
+          taskName: task?.name ?? "(entregable eliminado)",
+          taskNumber: task?.number,
+        };
+      })
+    );
+  },
+});
+
 export const approve = mutation({
   args: { token: v.string(), subtaskId: v.id("subtasks") },
   handler: async (ctx, { token, subtaskId }) => {
@@ -111,6 +146,23 @@ export const sendBack = mutation({
       status: "devuelto",
       completed: false,
       feedback: trimmed,
+    });
+  },
+});
+
+/** Puts an approved deliverable back under review, keeping its file. */
+export const reopen = mutation({
+  args: { token: v.string(), subtaskId: v.id("subtasks") },
+  handler: async (ctx, { token, subtaskId }) => {
+    await requireAdmin(ctx, token);
+
+    const subtask = await ctx.db.get(subtaskId);
+    if (!subtask) throw new Error("Subtarea no encontrada");
+
+    await ctx.db.patch(subtaskId, {
+      status: "revision",
+      completed: false,
+      feedback: undefined,
     });
   },
 });

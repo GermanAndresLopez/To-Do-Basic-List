@@ -16,6 +16,7 @@ import {
   TrashIcon,
 } from "@/components/icons";
 import { SubtaskDeliverable } from "@/components/SubtaskDeliverable";
+import { PendingCountBadge } from "@/components/StatusBadge";
 import { getTaskColor } from "@/lib/taskColors";
 import { getPersonColor, parseSubtaskName } from "@/lib/subtaskFormat";
 import { playCelebrationSound, playCheckSound } from "@/lib/sound";
@@ -34,6 +35,7 @@ type TaskWithSubtasks = Doc<"tasks"> & {
   subtasks: SubtaskWithAttachment[];
   totalSubtasks: number;
   completedSubtasks: number;
+  pendingReview: number;
 };
 
 export function TaskCard({
@@ -154,19 +156,22 @@ export function TaskCard({
               <h3 className="text-[15px] font-semibold leading-tight text-ink">
                 {task.name}
               </h3>
-              {task.totalSubtasks > 0 && (
-                <p
-                  className={`mt-0.5 text-[13px] ${
-                    isComplete
-                      ? "font-medium text-success"
-                      : "text-ink-tertiary"
-                  }`}
-                >
-                  {isComplete
-                    ? "🎉 ¡Completado!"
-                    : `${task.completedSubtasks} de ${task.totalSubtasks}`}
-                </p>
-              )}
+              <span className="mt-1 flex flex-wrap items-center gap-1.5">
+                {task.totalSubtasks > 0 && (
+                  <span
+                    className={`text-[13px] ${
+                      isComplete
+                        ? "font-medium text-success"
+                        : "text-ink-tertiary"
+                    }`}
+                  >
+                    {isComplete
+                      ? "🎉 ¡Completado!"
+                      : `${task.completedSubtasks} de ${task.totalSubtasks}`}
+                  </span>
+                )}
+                {isAdmin && <PendingCountBadge count={task.pendingReview} />}
+              </span>
             </span>
             <ChevronDownIcon
               className={`mt-1 h-4 w-4 shrink-0 text-ink-tertiary transition-transform duration-200 ${

@@ -3,7 +3,11 @@
 import { useMutation } from "convex/react";
 import Link from "next/link";
 import { api } from "../../convex/_generated/api";
-import { ClipboardCheckIcon, ShieldIcon } from "@/components/icons";
+import {
+  ClipboardCheckIcon,
+  HistoryIcon,
+  ShieldIcon,
+} from "@/components/icons";
 import { useAdminSession } from "@/lib/useAdminSession";
 
 export function Header() {
@@ -28,10 +32,20 @@ export function Header() {
         </Link>
 
         {isAdmin ? (
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2.5 py-1 text-[12px] font-semibold text-accent">
+          <div className="flex items-center gap-1">
+            <Link
+              href="/admin/revision"
+              className="inline-flex items-center gap-1.5 rounded-full bg-accent/10 px-2.5 py-1 text-[12px] font-semibold text-accent transition-colors duration-150 hover:bg-accent/15 active:scale-[0.97]"
+            >
+              <HistoryIcon className="h-3.5 w-3.5" />
+              Revisión
+            </Link>
+            <span
+              title="Sesión de administrador activa"
+              className="hidden items-center gap-1 rounded-full px-2 py-1 text-[12px] font-medium text-ink-tertiary sm:inline-flex"
+            >
               <ShieldIcon className="h-3.5 w-3.5" />
-              Administrador
+              Admin
             </span>
             <button
               onClick={handleSignOut}
