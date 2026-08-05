@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { Doc, Id } from "./_generated/dataModel";
 import { mutation, query, QueryCtx } from "./_generated/server";
+import { requireAdmin } from "./admin";
 
 /** Subtasks plus the deliverable currently under review, if any. */
 async function subtasksWithAttachments(ctx: QueryCtx, taskId: Id<"tasks">) {
@@ -91,16 +92,24 @@ export const getByNumber = query({
 });
 
 export const create = mutation({
-  args: { projectId: v.id("projects"), name: v.string() },
-  handler: async (ctx, { projectId, name }) => {
+  args: {
+    token: v.string(),
+    projectId: v.id("projects"),
+    groupId: v.id("groups"),
+    name: v.string(),
+  },
+  handler: async (ctx, { token, projectId, groupId, name }) => {
+    await requireAdmin(ctx, token);
+
     const trimmed = name.trim();
     if (!trimmed) throw new Error("El nombre no puede estar vacío");
 
-    // Numbers stay stable when a task is deleted, so continue past the
-    // highest one ever used in this project rather than counting rows.
+    // Numbers restart inside each group and stay stable when a deliverable is
+    // deleted, so continue past the highest ever used here rather than
+    // counting rows.
     const siblings = await ctx.db
       .query("tasks")
-      .withIndex("by_project", (q) => q.eq("projectId", projectId))
+      .withIndex("by_group", (q) => q.eq("groupId", groupId))
       .collect();
     const highest = siblings.reduce(
       (max, task) => Math.max(max, task.number ?? 0),
@@ -109,47 +118,33 @@ export const create = mutation({
 
     return await ctx.db.insert("tasks", {
       projectId,
+      groupId,
       name: trimmed,
       number: highest + 1,
     });
   },
 });
 
-/** One-off migration: give every pre-existing task a number. */
-export const backfillNumbers = mutation({
-  args: {},
-  handler: async (ctx) => {
-    const projects = await ctx.db.query("projects").collect();
-    let updated = 0;
-
-    for (const project of projects) {
-      const tasks = await ctx.db
-        .query("tasks")
-        .withIndex("by_project", (q) => q.eq("projectId", project._id))
-        .order("asc")
-        .collect();
-
-      let next = tasks.reduce(
-        (max, task) => Math.max(max, task.number ?? 0),
-        0
-      );
-
-      for (const task of tasks) {
-        if (task.number === undefined) {
-          next += 1;
-          await ctx.db.patch(task._id, { number: next });
-          updated += 1;
-        }
-      }
+/** One-off migration: move loose deliverables into a group. */
+export const assignToGroup = mutation({
+  args: {
+    token: v.string(),
+    groupId: v.id("groups"),
+    taskIds: v.array(v.id("tasks")),
+  },
+  handler: async (ctx, { token, groupId, taskIds }) => {
+    await requireAdmin(ctx, token);
+    for (const taskId of taskIds) {
+      await ctx.db.patch(taskId, { groupId });
     }
-
-    return { updated };
+    return { moved: taskIds.length };
   },
 });
 
 export const rename = mutation({
-  args: { taskId: v.id("tasks"), name: v.string() },
-  handler: async (ctx, { taskId, name }) => {
+  args: { token: v.string(), taskId: v.id("tasks"), name: v.string() },
+  handler: async (ctx, { token, taskId, name }) => {
+    await requireAdmin(ctx, token);
     const trimmed = name.trim();
     if (!trimmed) throw new Error("El nombre no puede estar vacío");
     await ctx.db.patch(taskId, { name: trimmed });
@@ -157,8 +152,9 @@ export const rename = mutation({
 });
 
 export const remove = mutation({
-  args: { taskId: v.id("tasks") },
-  handler: async (ctx, { taskId }) => {
+  args: { token: v.string(), taskId: v.id("tasks") },
+  handler: async (ctx, { token, taskId }) => {
+    await requireAdmin(ctx, token);
     const subtasks = await ctx.db
       .query("subtasks")
       .withIndex("by_task", (q) => q.eq("taskId", taskId))

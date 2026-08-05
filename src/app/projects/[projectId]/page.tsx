@@ -7,6 +7,7 @@ import { useParams } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
+import { GroupCard } from "@/components/GroupCard";
 import { ProgressBar } from "@/components/ProgressBar";
 import { TaskCard } from "@/components/TaskCard";
 import { ChevronLeftIcon, PlusIcon } from "@/components/icons";
@@ -17,25 +18,29 @@ export default function ProjectPage() {
   const projectId = params.projectId as Id<"projects">;
 
   const project = useQuery(api.projects.get, { projectId });
-  const tasks = useQuery(api.tasks.listByProject, { projectId });
-  const createTask = useMutation(api.tasks.create);
+  const tree = useQuery(api.groups.listByProject, { projectId });
+  const createGroup = useMutation(api.groups.create);
   const { isAdmin, token: adminToken } = useAdminSession();
-  const [taskName, setTaskName] = useState("");
+  const [groupName, setGroupName] = useState("");
 
-  async function handleAddTask(e: FormEvent) {
+  async function handleAddGroup(e: FormEvent) {
     e.preventDefault();
-    const trimmed = taskName.trim();
-    if (!trimmed) return;
-    setTaskName("");
-    await createTask({ projectId, name: trimmed });
+    const trimmed = groupName.trim();
+    if (!trimmed || !adminToken) return;
+    setGroupName("");
+    await createGroup({ token: adminToken, projectId, name: trimmed });
   }
 
-  const totalSubtasks =
-    tasks?.reduce((sum, t) => sum + t.totalSubtasks, 0) ?? 0;
-  const completedSubtasks =
-    tasks?.reduce((sum, t) => sum + t.completedSubtasks, 0) ?? 0;
+  const allTasks = tree
+    ? [...tree.groups.flatMap((g) => g.tasks), ...tree.ungrouped]
+    : [];
+  const totalSubtasks = allTasks.reduce((n, t) => n + t.totalSubtasks, 0);
+  const completedSubtasks = allTasks.reduce(
+    (n, t) => n + t.completedSubtasks,
+    0
+  );
 
-  if (project === undefined || tasks === undefined) {
+  if (project === undefined || tree === undefined) {
     return (
       <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-8 sm:px-6 sm:py-10">
         <div className="flex flex-col gap-3">
@@ -65,7 +70,7 @@ export default function ProjectPage() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 sm:py-10">
+    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-5 px-4 py-8 sm:px-6 sm:py-10">
       <div>
         <Link
           href="/projects"
@@ -93,47 +98,79 @@ export default function ProjectPage() {
         </div>
       </div>
 
-      <form onSubmit={handleAddTask} className="flex gap-2">
-        <input
-          value={taskName}
-          onChange={(e) => setTaskName(e.target.value)}
-          placeholder="Nueva tarea / entregable"
-          className="flex-1 rounded-xl border border-border bg-surface px-4 py-3 text-[15px] text-ink outline-none transition-shadow duration-150 placeholder:text-ink-tertiary focus:border-accent focus:ring-4 focus:ring-accent/15"
-        />
-        <button
-          type="submit"
-          disabled={!taskName.trim()}
-          className="flex shrink-0 items-center gap-1.5 rounded-xl bg-accent px-4 py-3 text-[15px] font-medium text-white transition-[transform,background-color,opacity] duration-150 ease-out hover:bg-accent-hover active:scale-[0.97] disabled:pointer-events-none disabled:opacity-40"
-        >
-          <PlusIcon className="h-4 w-4" />
-          <span className="hidden sm:inline">Añadir</span>
-        </button>
-      </form>
-
-      <ul className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3">
         <AnimatePresence initial={false} mode="popLayout">
-          {tasks.length === 0 && (
-            <motion.li
+          {tree.groups.length === 0 && tree.ungrouped.length === 0 && (
+            <motion.div
               key="empty"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="rounded-2xl border border-dashed border-border px-6 py-14 text-center text-[15px] text-ink-secondary"
             >
-              Todavía no hay tareas. Añade la primera arriba.
-            </motion.li>
+              Todavía no hay desembolsos.
+              {isAdmin && " Crea el primero abajo."}
+            </motion.div>
           )}
-          {tasks.map((task, index) => (
-            <TaskCard
-              key={task._id}
-              task={task}
-              colorIndex={index}
-              isAdmin={isAdmin}
-              adminToken={adminToken}
-            />
+
+          {tree.groups.map((group) => (
+            <motion.div
+              key={group._id}
+              layout
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.97 }}
+              transition={{ type: "spring", duration: 0.4, bounce: 0.1 }}
+            >
+              <GroupCard
+                group={group}
+                projectId={projectId}
+                isAdmin={isAdmin}
+                adminToken={adminToken}
+              />
+            </motion.div>
           ))}
         </AnimatePresence>
-      </ul>
+
+        {/* Deliverables from before disbursements existed, if any survive. */}
+        {tree.ungrouped.length > 0 && (
+          <section className="rounded-2xl border border-dashed border-border p-3 sm:p-4">
+            <h2 className="text-[15px] font-semibold text-ink-secondary">
+              Sin desembolso asignado
+            </h2>
+            <ul className="mt-3 flex flex-col gap-2.5">
+              {tree.ungrouped.map((task, index) => (
+                <TaskCard
+                  key={task._id}
+                  task={task}
+                  colorIndex={index}
+                  isAdmin={isAdmin}
+                  adminToken={adminToken}
+                />
+              ))}
+            </ul>
+          </section>
+        )}
+      </div>
+
+      {isAdmin && (
+        <form onSubmit={handleAddGroup} className="flex gap-2">
+          <input
+            value={groupName}
+            onChange={(e) => setGroupName(e.target.value)}
+            placeholder="Nuevo desembolso"
+            className="flex-1 rounded-xl border border-border bg-surface px-4 py-3 text-[15px] text-ink outline-none transition-shadow duration-150 placeholder:text-ink-tertiary focus:border-accent focus:ring-4 focus:ring-accent/15"
+          />
+          <button
+            type="submit"
+            disabled={!groupName.trim()}
+            className="flex shrink-0 items-center gap-1.5 rounded-xl bg-accent px-4 py-3 text-[15px] font-medium text-white transition-[transform,background-color,opacity] duration-150 ease-out hover:bg-accent-hover active:scale-[0.97] disabled:pointer-events-none disabled:opacity-40"
+          >
+            <PlusIcon className="h-4 w-4" />
+            <span className="hidden sm:inline">Crear</span>
+          </button>
+        </form>
+      )}
     </main>
   );
 }

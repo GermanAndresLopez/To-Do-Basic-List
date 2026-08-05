@@ -15,15 +15,24 @@ export default defineSchema({
   projects: defineTable({
     title: v.string(),
   }),
-  tasks: defineTable({
+  // A disbursement ("Desembolso N") groups the deliverables it funds.
+  groups: defineTable({
     projectId: v.id("projects"),
     name: v.string(),
-    // Sequential, human-readable id scoped to its project (1, 2, 3...).
-    // Optional so existing rows stay valid until they are backfilled.
+    // Display order within the project; lower comes first.
+    position: v.number(),
+  }).index("by_project", ["projectId"]),
+  tasks: defineTable({
+    projectId: v.id("projects"),
+    // Optional while pre-existing deliverables are assigned to a group.
+    groupId: v.optional(v.id("groups")),
+    name: v.string(),
+    // Sequential, human-readable id scoped to its group (1, 2, 3...).
     number: v.optional(v.number()),
   })
     .index("by_project", ["projectId"])
-    .index("by_project_number", ["projectId", "number"]),
+    .index("by_project_number", ["projectId", "number"])
+    .index("by_group", ["groupId"]),
   subtasks: defineTable({
     taskId: v.id("tasks"),
     name: v.string(),

@@ -10,6 +10,7 @@
 
 import type * as admin from "../admin.js";
 import type * as deliverables from "../deliverables.js";
+import type * as groups from "../groups.js";
 import type * as projects from "../projects.js";
 import type * as subtasks from "../subtasks.js";
 import type * as tasks from "../tasks.js";
@@ -23,6 +24,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   admin: typeof admin;
   deliverables: typeof deliverables;
+  groups: typeof groups;
   projects: typeof projects;
   subtasks: typeof subtasks;
   tasks: typeof tasks;

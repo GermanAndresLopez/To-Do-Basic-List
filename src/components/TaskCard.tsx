@@ -83,14 +83,14 @@ export function TaskCard({
   async function handleAddSubtask(e: FormEvent) {
     e.preventDefault();
     const trimmedText = subtaskText.trim();
-    if (!trimmedText) return;
+    if (!trimmedText || !adminToken) return;
     const trimmedResponsible = subtaskResponsible.trim();
     const name = trimmedResponsible
       ? `${trimmedText} — ${trimmedResponsible}`
       : trimmedText;
     setSubtaskText("");
     setSubtaskResponsible("");
-    await createSubtask({ taskId: task._id, name });
+    await createSubtask({ token: adminToken, taskId: task._id, name });
   }
 
   function handleToggleSubtask(subtask: Doc<"subtasks">) {
@@ -100,15 +100,15 @@ export function TaskCard({
 
   function handleRenameTask(value: string) {
     const trimmed = value.trim();
-    if (trimmed && trimmed !== task.name) {
-      renameTask({ taskId: task._id, name: trimmed });
+    if (adminToken && trimmed && trimmed !== task.name) {
+      renameTask({ token: adminToken, taskId: task._id, name: trimmed });
     }
   }
 
   function handleRenameSubtask(subtask: Doc<"subtasks">, value: string) {
     const trimmed = value.trim();
-    if (trimmed && trimmed !== subtask.name) {
-      renameSubtask({ subtaskId: subtask._id, name: trimmed });
+    if (adminToken && trimmed && trimmed !== subtask.name) {
+      renameSubtask({ token: adminToken, subtaskId: subtask._id, name: trimmed });
     }
   }
 
@@ -329,6 +329,7 @@ export function TaskCard({
 
             <form
               onSubmit={handleAddSubtask}
+              hidden={!isAdmin}
               className="mt-1 flex flex-col gap-1.5 border-t border-border-strong/60 pt-2"
             >
               <div className="flex items-center gap-3">
@@ -363,7 +364,7 @@ export function TaskCard({
         }. Esta acción no se puede deshacer.`}
         onConfirm={() => {
           setConfirmDeleteTask(false);
-          removeTask({ taskId: task._id });
+          if (adminToken) removeTask({ token: adminToken, taskId: task._id });
         }}
         onCancel={() => setConfirmDeleteTask(false)}
       />
@@ -377,8 +378,11 @@ export function TaskCard({
             : undefined
         }
         onConfirm={() => {
-          if (pendingDeleteSubtaskId) {
-            removeSubtask({ subtaskId: pendingDeleteSubtaskId });
+          if (pendingDeleteSubtaskId && adminToken) {
+            removeSubtask({
+              token: adminToken,
+              subtaskId: pendingDeleteSubtaskId,
+            });
           }
           setPendingDeleteSubtaskId(null);
         }}

@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { requireAdmin } from "./admin";
 
 export const list = query({
   args: {},
@@ -42,8 +43,9 @@ export const get = query({
 });
 
 export const create = mutation({
-  args: { title: v.string() },
-  handler: async (ctx, { title }) => {
+  args: { token: v.string(), title: v.string() },
+  handler: async (ctx, { token, title }) => {
+    await requireAdmin(ctx, token);
     const trimmed = title.trim();
     if (!trimmed) throw new Error("El título no puede estar vacío");
     return await ctx.db.insert("projects", { title: trimmed });
@@ -51,8 +53,10 @@ export const create = mutation({
 });
 
 export const remove = mutation({
-  args: { projectId: v.id("projects") },
-  handler: async (ctx, { projectId }) => {
+  args: { token: v.string(), projectId: v.id("projects") },
+  handler: async (ctx, { token, projectId }) => {
+    await requireAdmin(ctx, token);
+
     const tasks = await ctx.db
       .query("tasks")
       .withIndex("by_project", (q) => q.eq("projectId", projectId))
@@ -63,10 +67,27 @@ export const remove = mutation({
         .withIndex("by_task", (q) => q.eq("taskId", task._id))
         .collect();
       for (const subtask of subtasks) {
+        const attachments = await ctx.db
+          .query("attachments")
+          .withIndex("by_subtask", (q) => q.eq("subtaskId", subtask._id))
+          .collect();
+        for (const attachment of attachments) {
+          await ctx.storage.delete(attachment.storageId);
+          await ctx.db.delete(attachment._id);
+        }
         await ctx.db.delete(subtask._id);
       }
       await ctx.db.delete(task._id);
     }
+
+    const groups = await ctx.db
+      .query("groups")
+      .withIndex("by_project", (q) => q.eq("projectId", projectId))
+      .collect();
+    for (const group of groups) {
+      await ctx.db.delete(group._id);
+    }
+
     await ctx.db.delete(projectId);
   },
 });

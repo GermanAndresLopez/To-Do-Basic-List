@@ -9,11 +9,13 @@ import { Id } from "../../../convex/_generated/dataModel";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { ProgressBar } from "@/components/ProgressBar";
 import { FolderIcon, PlusIcon, TrashIcon } from "@/components/icons";
+import { useAdminSession } from "@/lib/useAdminSession";
 
 export default function ProjectsPage() {
   const projects = useQuery(api.projects.list);
   const createProject = useMutation(api.projects.create);
   const removeProject = useMutation(api.projects.remove);
+  const { isAdmin, token: adminToken } = useAdminSession();
   const [title, setTitle] = useState("");
   const [pendingDeleteId, setPendingDeleteId] =
     useState<Id<"projects"> | null>(null);
@@ -23,9 +25,9 @@ export default function ProjectsPage() {
   async function handleCreate(e: FormEvent) {
     e.preventDefault();
     const trimmed = title.trim();
-    if (!trimmed) return;
+    if (!trimmed || !adminToken) return;
     setTitle("");
-    await createProject({ title: trimmed });
+    await createProject({ token: adminToken, title: trimmed });
   }
 
   return (
@@ -39,7 +41,7 @@ export default function ProjectsPage() {
         </p>
       </header>
 
-      <form onSubmit={handleCreate} className="flex gap-2">
+      <form onSubmit={handleCreate} hidden={!isAdmin} className="flex gap-2">
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -106,13 +108,15 @@ export default function ProjectsPage() {
                     />
                   </div>
                 </Link>
-                <button
-                  onClick={() => setPendingDeleteId(project._id)}
-                  aria-label="Eliminar proyecto"
-                  className="absolute right-3 top-3 rounded-full p-1.5 text-ink-tertiary transition-colors duration-150 hover:bg-danger-bg hover:text-danger active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 sm:right-4 sm:top-4"
-                >
-                  <TrashIcon className="h-4 w-4" />
-                </button>
+                {isAdmin && (
+                  <button
+                    onClick={() => setPendingDeleteId(project._id)}
+                    aria-label="Eliminar proyecto"
+                    className="absolute right-3 top-3 rounded-full p-1.5 text-ink-tertiary transition-colors duration-150 hover:bg-danger-bg hover:text-danger active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 sm:right-4 sm:top-4"
+                  >
+                    <TrashIcon className="h-4 w-4" />
+                  </button>
+                )}
               </div>
             </motion.li>
           ))}
@@ -130,7 +134,9 @@ export default function ProjectsPage() {
             : undefined
         }
         onConfirm={() => {
-          if (pendingDeleteId) removeProject({ projectId: pendingDeleteId });
+          if (pendingDeleteId && adminToken) {
+            removeProject({ token: adminToken, projectId: pendingDeleteId });
+          }
           setPendingDeleteId(null);
         }}
         onCancel={() => setPendingDeleteId(null)}
