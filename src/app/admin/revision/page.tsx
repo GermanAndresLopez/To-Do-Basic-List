@@ -14,7 +14,7 @@ import {
   HistoryIcon,
 } from "@/components/icons";
 import { downloadFile, fileKind, formatFileSize } from "@/lib/downloadFile";
-import { getPersonColor, parseSubtaskName } from "@/lib/subtaskFormat";
+import { PERSON_CHIP_CLASS, parseSubtaskName } from "@/lib/subtaskFormat";
 import { useAdminSession } from "@/lib/useAdminSession";
 
 type Filter = "todos" | "revision" | "aprobado" | "devuelto";
@@ -183,21 +183,11 @@ export default function RevisionPage() {
 
                 {people.length > 0 && (
                   <div className="mt-1.5 flex flex-wrap gap-1">
-                    {people.map((person) => {
-                      const color = getPersonColor(person);
-                      return (
-                        <span
-                          key={person}
-                          className="rounded-full px-2 py-0.5 text-[11px] font-semibold"
-                          style={{
-                            backgroundColor: color.bg,
-                            color: color.text,
-                          }}
-                        >
-                          {person}
-                        </span>
-                      );
-                    })}
+                    {people.map((person) => (
+                      <span key={person} className={PERSON_CHIP_CLASS}>
+                        {person}
+                      </span>
+                    ))}
                   </div>
                 )}
 

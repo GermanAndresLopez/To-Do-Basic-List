@@ -32,6 +32,7 @@ function ViewerPanel({
   onClose,
 }: ViewerProps) {
   const [useOfficeViewer, setUseOfficeViewer] = useState(false);
+  const [officeReady, setOfficeReady] = useState(false);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -118,11 +119,37 @@ function ViewerPanel({
               </div>
             </object>
           ) : useOfficeViewer ? (
-            <iframe
-              title={`Vista previa de ${fileName}`}
-              src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`}
-              className="h-full w-full border-0"
-            />
+            <div className="relative h-full w-full">
+              <iframe
+                title={`Vista previa de ${fileName}`}
+                src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`}
+                onLoad={() => setOfficeReady(true)}
+                className="h-full w-full border-0"
+              />
+              {/* Microsoft's renderer can take a while; say so instead of
+                  leaving the reviewer looking at a blank frame. */}
+              {!officeReady && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-canvas px-6 text-center">
+                  <span className="h-6 w-6 animate-spin rounded-full border-2 border-border-strong border-t-accent" />
+                  <p className="text-[14px] font-medium text-ink">
+                    Abriendo con el visor de Office…
+                  </p>
+                  <p className="max-w-xs text-[12px] leading-relaxed text-ink-tertiary">
+                    Puede tardar bastante: el documento se envía a los
+                    servidores de Microsoft para convertirlo. Si tienes prisa,
+                    descárgalo.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => downloadFile(url, fileName)}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-2 text-[13px] font-medium text-ink-secondary transition-colors duration-150 hover:bg-surface-hover active:scale-[0.97]"
+                  >
+                    <DownloadIcon className="h-4 w-4" />
+                    Descargar
+                  </button>
+                </div>
+              )}
+            </div>
           ) : (
             <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
               <p className="max-w-sm text-[14px] leading-relaxed text-ink-secondary">
@@ -148,8 +175,8 @@ function ViewerPanel({
                 </button>
               </div>
               <p className="max-w-sm text-[11px] leading-relaxed text-ink-tertiary">
-                El visor de Office envía el archivo a los servidores de
-                Microsoft para poder mostrarlo.
+                El visor de Office envía el archivo a Microsoft para mostrarlo,
+                y suele tardar. Descargarlo es más rápido.
               </p>
             </div>
           )}

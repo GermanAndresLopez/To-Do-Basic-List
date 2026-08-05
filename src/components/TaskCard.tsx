@@ -18,9 +18,12 @@ import {
 import { SubtaskDeliverable } from "@/components/SubtaskDeliverable";
 import { PendingCountBadge } from "@/components/StatusBadge";
 import { getTaskColor } from "@/lib/taskColors";
-import { getPersonColor, parseSubtaskName } from "@/lib/subtaskFormat";
+import { PERSON_CHIP_CLASS, parseSubtaskName } from "@/lib/subtaskFormat";
 import { playCelebrationSound, playCheckSound } from "@/lib/sound";
 import { useJustCompleted } from "@/lib/useJustCompleted";
+
+/** Same amber as the "En revisión" badge, so the signals read as one idea. */
+const REVIEW_DOT = "#E8890C";
 
 type SubtaskWithAttachment = Doc<"subtasks"> & {
   attachment: {
@@ -69,6 +72,7 @@ export function TaskCard({
   const justCompleted = useJustCompleted(isComplete, 2400);
   const color = getTaskColor(colorIndex);
   const showContent = expanded || isEditing;
+  const hasPendingReview = task.pendingReview > 0;
 
   useEffect(() => {
     if (justCompleted) playCelebrationSound();
@@ -148,10 +152,20 @@ export function TaskCard({
             aria-expanded={expanded}
             className="flex flex-1 items-start gap-3 text-left"
           >
-            <span
-              className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full"
-              style={{ backgroundColor: color.dot }}
-            />
+            <span className="relative mt-1.5 flex h-2.5 w-2.5 shrink-0">
+              {hasPendingReview && (
+                <span
+                  className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60"
+                  style={{ backgroundColor: REVIEW_DOT }}
+                />
+              )}
+              <span
+                className="relative inline-flex h-2.5 w-2.5 rounded-full"
+                style={{
+                  backgroundColor: hasPendingReview ? REVIEW_DOT : color.dot,
+                }}
+              />
+            </span>
             <span className="flex-1">
               <h3 className="text-[15px] font-semibold leading-tight text-ink">
                 {task.name}
@@ -275,21 +289,14 @@ export function TaskCard({
                               </span>
                               {people.length > 0 && (
                                 <div className="mt-1 flex flex-wrap gap-1">
-                                  {people.map((person) => {
-                                    const personColor = getPersonColor(person);
-                                    return (
-                                      <span
-                                        key={person}
-                                        className="rounded-full px-2 py-0.5 text-[11px] font-semibold"
-                                        style={{
-                                          backgroundColor: personColor.bg,
-                                          color: personColor.text,
-                                        }}
-                                      >
-                                        {person}
-                                      </span>
-                                    );
-                                  })}
+                                  {people.map((person) => (
+                                    <span
+                                      key={person}
+                                      className={PERSON_CHIP_CLASS}
+                                    >
+                                      {person}
+                                    </span>
+                                  ))}
                                 </div>
                               )}
                               <SubtaskDeliverable
