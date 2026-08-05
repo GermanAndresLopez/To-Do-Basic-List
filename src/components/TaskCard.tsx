@@ -229,7 +229,14 @@ export function TaskCard({
             transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
             className="overflow-hidden"
           >
-            <ul className="mt-2 flex flex-col">
+            {!isEditing && task.subtasks.length > 0 && (
+              <div className="mt-3 hidden items-center gap-4 border-b border-border-strong/50 pb-1 pl-[34px] text-[10px] font-bold uppercase tracking-wider text-ink-tertiary sm:flex">
+                <span className="flex-1">Tarea</span>
+                <span className="w-40 shrink-0 pl-3">Responsables</span>
+              </div>
+            )}
+
+            <ul className="mt-1 flex flex-col">
               <AnimatePresence initial={false} mode="popLayout">
                 {task.subtasks.map((subtask) => {
                   const { text, people } = parseSubtaskName(subtask.name);
@@ -264,34 +271,41 @@ export function TaskCard({
                             />
                           ) : (
                             <>
-                              <span className="flex items-start gap-1.5">
-                                {subtask.status === "revision" && (
-                                  <span className="mt-[6px]">
-                                    <ReviewDot pending size={8} />
-                                  </span>
-                                )}
-                                <span
-                                  className={`text-[14px] transition-colors duration-200 ${
-                                    subtask.completed
-                                      ? "text-ink-tertiary line-through"
-                                      : "text-ink"
-                                  }`}
-                                >
-                                  {text}
-                                </span>
-                              </span>
-                              {people.length > 0 && (
-                                <div className="mt-1 flex flex-wrap gap-1">
-                                  {people.map((person) => (
-                                    <span
-                                      key={person}
-                                      className={PERSON_CHIP_CLASS}
-                                    >
-                                      {person}
+                              {/* Task wording and the people accountable for
+                                  it are separate columns once there is room,
+                                  so each can be scanned on its own. */}
+                              <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:gap-4">
+                                <span className="flex min-w-0 flex-1 items-start gap-1.5">
+                                  {subtask.status === "revision" && (
+                                    <span className="mt-[6px]">
+                                      <ReviewDot pending size={8} />
                                     </span>
-                                  ))}
-                                </div>
-                              )}
+                                  )}
+                                  <span
+                                    className={`text-[14px] transition-colors duration-200 ${
+                                      subtask.completed
+                                        ? "text-ink-tertiary line-through"
+                                        : "text-ink"
+                                    }`}
+                                  >
+                                    {text}
+                                  </span>
+                                </span>
+
+                                {people.length > 0 && (
+                                  <div className="flex flex-wrap gap-1 border-border-strong/50 sm:w-40 sm:shrink-0 sm:border-l sm:pl-3">
+                                    {people.map((person) => (
+                                      <span
+                                        key={person}
+                                        className={PERSON_CHIP_CLASS}
+                                      >
+                                        {person}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+
                               <SubtaskDeliverable
                                 subtaskId={subtask._id}
                                 status={subtask.status}

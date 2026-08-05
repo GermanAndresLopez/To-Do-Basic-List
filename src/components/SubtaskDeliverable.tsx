@@ -14,6 +14,7 @@ import {
   PaperclipIcon,
   ReturnIcon,
   CheckIcon,
+  TrashIcon,
 } from "@/components/icons";
 import { downloadFile, fileKind, formatFileSize } from "@/lib/downloadFile";
 import { playCheckSound } from "@/lib/sound";
@@ -47,6 +48,7 @@ export function SubtaskDeliverable({
   const approve = useMutation(api.deliverables.approve);
   const sendBack = useMutation(api.deliverables.sendBack);
   const reopen = useMutation(api.deliverables.reopen);
+  const resetDeliverable = useMutation(api.deliverables.reset);
 
   const fileInput = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -55,7 +57,7 @@ export function SubtaskDeliverable({
   const [reviewing, setReviewing] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
   const [confirm, setConfirm] = useState<
-    "aprobar" | "devolver" | "reabrir" | null
+    "aprobar" | "devolver" | "reabrir" | "eliminar" | null
   >(null);
 
   async function handleFile(file: File) {
@@ -136,9 +138,25 @@ export function SubtaskDeliverable({
     }
   }
 
+  async function handleDelete() {
+    setConfirm(null);
+    if (!adminToken) return;
+    setReviewing(true);
+    setError(null);
+    try {
+      await resetDeliverable({ token: adminToken, subtaskId });
+      setViewerOpen(false);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No se pudo eliminar");
+    } finally {
+      setReviewing(false);
+    }
+  }
+
   const canUpload = !isAdmin && status !== "aprobado";
   const showReviewPanel = isAdmin && attachment && status === "revision";
   const canReopen = isAdmin && status === "aprobado";
+  const canDelete = isAdmin && !!attachment;
 
   return (
     <div className="mt-2 flex flex-col gap-2">
@@ -187,6 +205,19 @@ export function SubtaskDeliverable({
           >
             <ReturnIcon className="h-3 w-3" />
             Reabrir
+          </button>
+        )}
+
+        {canDelete && (
+          <button
+            type="button"
+            onClick={() => setConfirm("eliminar")}
+            disabled={reviewing}
+            aria-label="Eliminar entrega"
+            className="inline-flex items-center gap-1 rounded-full border border-danger/30 px-2.5 py-1 text-[11px] font-medium text-danger transition-[transform,background-color] duration-150 ease-out hover:bg-danger-bg active:scale-[0.97] disabled:opacity-50"
+          >
+            <TrashIcon className="h-3 w-3" />
+            Eliminar entrega
           </button>
         )}
 
@@ -320,6 +351,15 @@ export function SubtaskDeliverable({
         description={`El responsable verá la etiqueta de retroalimentación con tus correcciones: "${corrections.trim()}"`}
         confirmLabel="Devolver"
         onConfirm={handleSendBack}
+        onCancel={() => setConfirm(null)}
+      />
+
+      <ConfirmDialog
+        open={confirm === "eliminar"}
+        title="Eliminar entrega"
+        description={`Se borrará "${attachment?.fileName ?? "el archivo"}" y las versiones anteriores de esta subtarea, que volverá a quedar sin entregar. Esta acción no se puede deshacer.`}
+        confirmLabel="Eliminar"
+        onConfirm={handleDelete}
         onCancel={() => setConfirm(null)}
       />
 
