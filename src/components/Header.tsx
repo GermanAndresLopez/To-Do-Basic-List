@@ -1,13 +1,10 @@
 "use client";
 
 import { useMutation } from "convex/react";
+import Image from "next/image";
 import Link from "next/link";
 import { api } from "../../convex/_generated/api";
-import {
-  ClipboardCheckIcon,
-  HistoryIcon,
-  ShieldIcon,
-} from "@/components/icons";
+import { HistoryIcon, ShieldIcon } from "@/components/icons";
 import { useAdminSession } from "@/lib/useAdminSession";
 
 export function Header() {
@@ -23,9 +20,15 @@ export function Header() {
     <header className="sticky top-0 z-40 border-b border-border/70 bg-canvas/75 backdrop-blur-xl backdrop-saturate-150">
       <div className="mx-auto flex h-14 max-w-2xl items-center justify-between gap-3 px-4 sm:px-6">
         <Link href="/projects" className="flex items-center gap-2">
-          <span className="flex h-7 w-7 items-center justify-center rounded-[9px] bg-accent text-white">
-            <ClipboardCheckIcon className="h-4 w-4" />
-          </span>
+          {/* Decorative: the adjacent wordmark already names the app. */}
+          <Image
+            src="/portapapeles.png"
+            alt=""
+            width={28}
+            height={28}
+            priority
+            className="h-7 w-7"
+          />
           <span className="text-[15px] font-semibold tracking-tight text-ink">
             Entregables
           </span>
