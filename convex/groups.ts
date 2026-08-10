@@ -27,6 +27,9 @@ async function subtasksOf(ctx: QueryCtx, taskId: Id<"tasks">) {
               fileName: attachment.fileName,
               size: attachment.size,
               url: await ctx.storage.getUrl(attachment.storageId),
+              driveStatus: attachment.driveStatus,
+              driveLink: attachment.driveLink,
+              driveFolder: attachment.driveFolder,
             }
           : null,
       };

@@ -1,5 +1,12 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { internal } from "./_generated/api";
+import { Doc } from "./_generated/dataModel";
+import {
+  internalMutation,
+  internalQuery,
+  mutation,
+  query,
+} from "./_generated/server";
 import { requireAdmin } from "./admin";
 
 const ALLOWED_EXTENSIONS = [
@@ -57,12 +64,19 @@ export const attach = mutation({
       contentType: args.contentType,
       size: args.size,
       active: true,
+      driveStatus: "pendiente",
     });
 
     await ctx.db.patch(args.subtaskId, {
       status: "revision",
       completed: false,
       feedback: undefined,
+    });
+
+    // Mirroring to Drive runs alongside; a failure there never blocks the
+    // upload, since Convex already holds the file.
+    await ctx.scheduler.runAfter(0, internal.googleDrive.upload, {
+      attachmentId,
     });
 
     return attachmentId;
@@ -98,6 +112,9 @@ export const history = query({
           uploadedAt: attachment._creationTime,
           isCurrent: attachment.active,
           url: await ctx.storage.getUrl(attachment.storageId),
+          driveStatus: attachment.driveStatus,
+          driveLink: attachment.driveLink,
+          driveFolder: attachment.driveFolder,
           subtaskId: attachment.subtaskId,
           subtaskName: subtask?.name ?? "(subtarea eliminada)",
           subtaskStatus: subtask?.status,
@@ -122,6 +139,18 @@ export const approve = mutation({
       completed: true,
       feedback: undefined,
     });
+
+    const attachment = await ctx.db
+      .query("attachments")
+      .withIndex("by_subtask", (q) => q.eq("subtaskId", subtaskId))
+      .filter((q) => q.eq(q.field("active"), true))
+      .unique();
+
+    if (attachment) {
+      await ctx.scheduler.runAfter(0, internal.googleDrive.moveToFinal, {
+        attachmentId: attachment._id,
+      });
+    }
   },
 });
 
@@ -147,6 +176,37 @@ export const sendBack = mutation({
       completed: false,
       feedback: trimmed,
     });
+  },
+});
+
+// --- helpers used by the Google Drive action -----------------------------
+
+export const getAttachment = internalQuery({
+  args: { attachmentId: v.id("attachments") },
+  handler: async (ctx, { attachmentId }): Promise<Doc<"attachments"> | null> =>
+    await ctx.db.get(attachmentId),
+});
+
+export const recordDriveSync = internalMutation({
+  args: {
+    attachmentId: v.id("attachments"),
+    driveStatus: v.union(
+      v.literal("pendiente"),
+      v.literal("sincronizado"),
+      v.literal("error"),
+      v.literal("sin_configurar")
+    ),
+    driveFileId: v.optional(v.string()),
+    driveLink: v.optional(v.string()),
+    driveFolder: v.optional(
+      v.union(v.literal("Revision"), v.literal("Finales"))
+    ),
+    driveError: v.optional(v.string()),
+  },
+  handler: async (ctx, { attachmentId, ...fields }) => {
+    // The row can be gone if the admin deleted the deliverable meanwhile.
+    if (!(await ctx.db.get(attachmentId))) return;
+    await ctx.db.patch(attachmentId, fields);
   },
 });
 

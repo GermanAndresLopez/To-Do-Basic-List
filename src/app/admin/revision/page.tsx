@@ -202,6 +202,23 @@ export default function RevisionPage() {
                     </span>
                   </span>
 
+                  {entry.driveStatus === "sincronizado" && entry.driveLink && (
+                    <a
+                      href={entry.driveLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      title={`Copia en Google Drive · carpeta ${entry.driveFolder ?? ""}`}
+                      className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-black/[0.045] px-2.5 py-1.5 text-[12px] font-medium text-ink-secondary transition-colors duration-150 hover:bg-black/[0.07]"
+                    >
+                      Drive
+                      {entry.driveFolder && (
+                        <span className="text-ink-tertiary">
+                          /{entry.driveFolder}
+                        </span>
+                      )}
+                    </a>
+                  )}
+
                   <button
                     type="button"
                     onClick={() => setViewing(entry._id)}

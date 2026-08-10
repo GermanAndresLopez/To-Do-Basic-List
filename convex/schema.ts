@@ -52,6 +52,22 @@ export default defineSchema({
     // Only the newest upload for a subtask is active; older ones are kept
     // as history so a returned deliverable can still be looked up.
     active: v.boolean(),
+    // Mirror of the file in Google Drive. Convex remains the source of
+    // truth; Drive is a copy the team can browse outside the app.
+    driveStatus: v.optional(
+      v.union(
+        v.literal("pendiente"),
+        v.literal("sincronizado"),
+        v.literal("error"),
+        v.literal("sin_configurar")
+      )
+    ),
+    driveFileId: v.optional(v.string()),
+    driveLink: v.optional(v.string()),
+    driveFolder: v.optional(
+      v.union(v.literal("Revision"), v.literal("Finales"))
+    ),
+    driveError: v.optional(v.string()),
   }).index("by_subtask", ["subtaskId"]),
   adminSessions: defineTable({
     token: v.string(),

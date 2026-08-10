@@ -26,7 +26,52 @@ type Attachment = {
   fileName: string;
   size: number;
   url: string | null;
+  driveStatus?: "pendiente" | "sincronizado" | "error" | "sin_configurar";
+  driveLink?: string;
+  driveFolder?: "Revision" | "Finales";
 };
+
+/**
+ * Drive is a mirror, not the source of truth, so this stays quiet: a link
+ * once the copy exists, and a note only when something needs attention.
+ */
+function DriveStatus({ attachment }: { attachment: Attachment }) {
+  if (attachment.driveStatus === "sincronizado" && attachment.driveLink) {
+    return (
+      <a
+        href={attachment.driveLink}
+        target="_blank"
+        rel="noreferrer"
+        className="inline-flex items-center gap-1 rounded-full bg-black/[0.045] px-2 py-0.5 text-[11px] font-medium text-ink-secondary transition-colors duration-150 hover:bg-black/[0.07]"
+        title={`Copia en Google Drive · carpeta ${attachment.driveFolder ?? ""}`}
+      >
+        Drive
+        {attachment.driveFolder && (
+          <span className="text-ink-tertiary">/{attachment.driveFolder}</span>
+        )}
+      </a>
+    );
+  }
+
+  if (attachment.driveStatus === "pendiente") {
+    return (
+      <span className="text-[11px] text-ink-tertiary">Copiando a Drive…</span>
+    );
+  }
+
+  if (attachment.driveStatus === "error") {
+    return (
+      <span
+        className="text-[11px] font-medium text-danger"
+        title="El archivo está a salvo en la app; solo falló la copia a Drive"
+      >
+        Drive: error de copia
+      </span>
+    );
+  }
+
+  return null;
+}
 
 export function SubtaskDeliverable({
   subtaskId,
@@ -207,6 +252,8 @@ export function SubtaskDeliverable({
             Reabrir
           </button>
         )}
+
+        {attachment && <DriveStatus attachment={attachment} />}
 
         {canDelete && (
           <button
