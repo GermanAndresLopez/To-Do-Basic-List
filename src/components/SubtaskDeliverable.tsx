@@ -208,8 +208,14 @@ export function SubtaskDeliverable({
       <div className="flex flex-wrap items-center gap-1.5">
         {status && <StatusBadge status={status} size="sm" />}
 
+        {/* Whoever uploaded it sees which file is there; opening it,
+            downloading it and the Drive copy belong to whoever reviews it. */}
         {attachment && (
-          <span className="inline-flex max-w-full items-center gap-1 rounded-full border border-border-strong bg-surface py-0.5 pl-2 pr-0.5 text-[11px]">
+          <span
+            className={`inline-flex max-w-full items-center gap-1 rounded-full border border-border-strong bg-surface py-0.5 pl-2 text-[11px] ${
+              isAdmin ? "pr-0.5" : "pr-2"
+            }`}
+          >
             <PaperclipIcon className="h-3 w-3 shrink-0 text-ink-tertiary" />
             <span className="truncate font-medium text-ink">
               {attachment.fileName}
@@ -217,27 +223,31 @@ export function SubtaskDeliverable({
             <span className="shrink-0 text-ink-tertiary">
               {formatFileSize(attachment.size)}
             </span>
-            <button
-              type="button"
-              onClick={() => setViewerOpen(true)}
-              aria-label="Ver documento"
-              title="Ver documento"
-              className="shrink-0 rounded-full p-1 text-ink-secondary transition-colors duration-150 hover:bg-surface-hover hover:text-accent active:scale-90"
-            >
-              <EyeIcon className="h-3.5 w-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={() =>
-                attachment.url &&
-                downloadFile(attachment.url, attachment.fileName)
-              }
-              aria-label="Descargar documento"
-              title="Descargar"
-              className="shrink-0 rounded-full p-1 text-ink-secondary transition-colors duration-150 hover:bg-surface-hover hover:text-accent active:scale-90"
-            >
-              <DownloadIcon className="h-3.5 w-3.5" />
-            </button>
+            {isAdmin && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setViewerOpen(true)}
+                  aria-label="Ver documento"
+                  title="Ver documento"
+                  className="shrink-0 rounded-full p-1 text-ink-secondary transition-colors duration-150 hover:bg-surface-hover hover:text-accent active:scale-90"
+                >
+                  <EyeIcon className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    attachment.url &&
+                    downloadFile(attachment.url, attachment.fileName)
+                  }
+                  aria-label="Descargar documento"
+                  title="Descargar"
+                  className="shrink-0 rounded-full p-1 text-ink-secondary transition-colors duration-150 hover:bg-surface-hover hover:text-accent active:scale-90"
+                >
+                  <DownloadIcon className="h-3.5 w-3.5" />
+                </button>
+              </>
+            )}
           </span>
         )}
 
@@ -253,7 +263,7 @@ export function SubtaskDeliverable({
           </button>
         )}
 
-        {attachment && <DriveStatus attachment={attachment} />}
+        {isAdmin && attachment && <DriveStatus attachment={attachment} />}
 
         {canDelete && (
           <button
