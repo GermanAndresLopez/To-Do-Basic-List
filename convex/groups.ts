@@ -85,6 +85,15 @@ export const listByProject = query({
       })
     );
 
+    // What is still owed comes first; finished disbursements sink to the
+    // bottom, each block keeping its own order.
+    grouped.sort((a, b) => {
+      const aDone = a.totalSubtasks > 0 && a.completedSubtasks === a.totalSubtasks;
+      const bDone = b.totalSubtasks > 0 && b.completedSubtasks === b.totalSubtasks;
+      if (aDone !== bDone) return aDone ? 1 : -1;
+      return a.position - b.position;
+    });
+
     const ungrouped = await decorate(allTasks.filter((task) => !task.groupId));
 
     return { groups: grouped, ungrouped };

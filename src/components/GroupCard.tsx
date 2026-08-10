@@ -60,12 +60,14 @@ export function GroupCard({
   const removeGroup = useMutation(api.groups.remove);
   const setDeadline = useMutation(api.groups.setDeadline);
 
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
   const [editingRequested, setIsEditing] = useState(false);
   const [taskName, setTaskName] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const isEditing = isAdmin && editingRequested;
+  const isDelivered =
+    group.totalSubtasks > 0 && group.completedSubtasks === group.totalSubtasks;
 
   async function handleAddTask(e: FormEvent) {
     e.preventDefault();
@@ -97,7 +99,13 @@ export function GroupCard({
   }
 
   return (
-    <section className="rounded-2xl border border-border bg-surface/60 p-3 shadow-sm sm:p-4">
+    <section
+      className={`rounded-2xl border p-3 shadow-sm transition-colors duration-200 sm:p-4 ${
+        isDelivered
+          ? "border-border/70 bg-black/[0.02]"
+          : "border-border bg-surface/60"
+      }`}
+    >
       <div className="flex items-start gap-2">
         {isEditing ? (
           <div className="flex flex-1 flex-col gap-1.5">
@@ -130,13 +138,24 @@ export function GroupCard({
             className="flex flex-1 flex-wrap items-center gap-x-2 gap-y-1 text-left"
           >
             <ReviewDot pending={group.pendingReview > 0} size={9} />
-            <h2 className="text-[17px] font-bold tracking-[-0.01em] text-ink">
+            <h2
+              className={`text-[17px] font-bold tracking-[-0.01em] transition-colors duration-200 ${
+                isDelivered ? "text-ink-tertiary line-through" : "text-ink"
+              }`}
+            >
               {group.name}
             </h2>
-            <span className="text-[13px] tabular-nums text-ink-tertiary">
-              {group.tasks.length} entregable
-              {group.tasks.length === 1 ? "" : "s"}
-            </span>
+            {isDelivered ? (
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-black/[0.05] px-2 py-0.5 text-[11px] font-semibold text-ink-tertiary">
+                <CheckIcon className="h-3 w-3" />
+                Entregado
+              </span>
+            ) : (
+              <span className="text-[13px] tabular-nums text-ink-tertiary">
+                {group.tasks.length} entregable
+                {group.tasks.length === 1 ? "" : "s"}
+              </span>
+            )}
             {isAdmin && <PendingCountBadge count={group.pendingReview} />}
             {group.deadline !== undefined && (
               <Deadline deadline={group.deadline} />
