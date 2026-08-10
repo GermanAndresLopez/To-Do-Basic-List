@@ -18,6 +18,12 @@ export const metadata: Metadata = {
   title: "Entregables",
   description:
     "Organiza tus proyectos, entregables y subtareas con seguimiento de avance en tiempo real.",
+  icons: {
+    icon: "/portapapeles.png",
+    shortcut: "/portapapeles.png",
+    // Used when the site is added to the home screen on iOS.
+    apple: "/portapapeles.png",
+  },
 };
 
 export const viewport: Viewport = {
