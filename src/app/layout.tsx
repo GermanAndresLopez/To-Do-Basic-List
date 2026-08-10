@@ -18,12 +18,8 @@ export const metadata: Metadata = {
   title: "Entregables",
   description:
     "Organiza tus proyectos, entregables y subtareas con seguimiento de avance en tiempo real.",
-  icons: {
-    icon: "/portapapeles.png",
-    shortcut: "/portapapeles.png",
-    // Used when the site is added to the home screen on iOS.
-    apple: "/portapapeles.png",
-  },
+  // The icons come from src/app/icon.png and src/app/apple-icon.png, which
+  // Next.js serves under a content hash so a stale favicon cannot linger.
 };
 
 export const viewport: Viewport = {
