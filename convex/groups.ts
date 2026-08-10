@@ -126,6 +126,19 @@ export const rename = mutation({
   },
 });
 
+/** `deadline` is null to clear the due date. */
+export const setDeadline = mutation({
+  args: {
+    token: v.string(),
+    groupId: v.id("groups"),
+    deadline: v.union(v.number(), v.null()),
+  },
+  handler: async (ctx, { token, groupId, deadline }) => {
+    await requireAdmin(ctx, token);
+    await ctx.db.patch(groupId, { deadline: deadline ?? undefined });
+  },
+});
+
 export const remove = mutation({
   args: { token: v.string(), groupId: v.id("groups") },
   handler: async (ctx, { token, groupId }) => {

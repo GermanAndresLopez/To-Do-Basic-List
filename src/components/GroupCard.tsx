@@ -6,6 +6,11 @@ import { FormEvent, useState } from "react";
 import { api } from "../../convex/_generated/api";
 import { Doc, Id } from "../../convex/_generated/dataModel";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import {
+  Deadline,
+  endOfLocalDay,
+  toDateInputValue,
+} from "@/components/Deadline";
 import { ProgressBar } from "@/components/ProgressBar";
 import { PendingCountBadge, ReviewDot } from "@/components/StatusBadge";
 import { TaskCard } from "@/components/TaskCard";
@@ -53,6 +58,7 @@ export function GroupCard({
   const createTask = useMutation(api.tasks.create);
   const renameGroup = useMutation(api.groups.rename);
   const removeGroup = useMutation(api.groups.remove);
+  const setDeadline = useMutation(api.groups.setDeadline);
 
   const [expanded, setExpanded] = useState(true);
   const [editingRequested, setIsEditing] = useState(false);
@@ -74,6 +80,15 @@ export function GroupCard({
     });
   }
 
+  function handleDeadlineChange(value: string) {
+    if (!adminToken) return;
+    setDeadline({
+      token: adminToken,
+      groupId: group._id,
+      deadline: value ? endOfLocalDay(value) : null,
+    });
+  }
+
   function handleRename(value: string) {
     const trimmed = value.trim();
     if (adminToken && trimmed && trimmed !== group.name) {
@@ -85,21 +100,34 @@ export function GroupCard({
     <section className="rounded-2xl border border-border bg-surface/60 p-3 shadow-sm sm:p-4">
       <div className="flex items-start gap-2">
         {isEditing ? (
-          <input
-            defaultValue={group.name}
-            autoFocus
-            onBlur={(e) => handleRename(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") e.currentTarget.blur();
-            }}
-            className="flex-1 rounded-md border border-border-strong bg-surface px-2 py-1 text-[17px] font-bold text-ink outline-none focus:border-accent"
-          />
+          <div className="flex flex-1 flex-col gap-1.5">
+            <input
+              defaultValue={group.name}
+              autoFocus
+              onBlur={(e) => handleRename(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") e.currentTarget.blur();
+              }}
+              className="w-full rounded-md border border-border-strong bg-surface px-2 py-1 text-[17px] font-bold text-ink outline-none focus:border-accent"
+            />
+            <label className="flex items-center gap-2 text-[12px] text-ink-secondary">
+              Fecha límite
+              <input
+                type="date"
+                defaultValue={
+                  group.deadline ? toDateInputValue(group.deadline) : ""
+                }
+                onChange={(e) => handleDeadlineChange(e.target.value)}
+                className="rounded-md border border-border bg-surface px-2 py-1 text-[12px] text-ink outline-none focus:border-accent"
+              />
+            </label>
+          </div>
         ) : (
           <button
             type="button"
             onClick={() => setExpanded((v) => !v)}
             aria-expanded={expanded}
-            className="flex flex-1 items-center gap-2 text-left"
+            className="flex flex-1 flex-wrap items-center gap-x-2 gap-y-1 text-left"
           >
             <ReviewDot pending={group.pendingReview > 0} size={9} />
             <h2 className="text-[17px] font-bold tracking-[-0.01em] text-ink">
@@ -110,6 +138,9 @@ export function GroupCard({
               {group.tasks.length === 1 ? "" : "s"}
             </span>
             {isAdmin && <PendingCountBadge count={group.pendingReview} />}
+            {group.deadline !== undefined && (
+              <Deadline deadline={group.deadline} />
+            )}
             <ChevronDownIcon
               className={`ml-auto h-4 w-4 shrink-0 text-ink-tertiary transition-transform duration-200 ${
                 expanded ? "rotate-180" : ""

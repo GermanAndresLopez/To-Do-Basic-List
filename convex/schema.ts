@@ -21,6 +21,8 @@ export default defineSchema({
     name: v.string(),
     // Display order within the project; lower comes first.
     position: v.number(),
+    // Instant the disbursement is due, stored as the end of that local day.
+    deadline: v.optional(v.number()),
   }).index("by_project", ["projectId"]),
   tasks: defineTable({
     projectId: v.id("projects"),
