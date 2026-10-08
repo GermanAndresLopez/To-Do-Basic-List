@@ -80,8 +80,7 @@ export function TaskCard({
     if (justCompleted) playCelebrationSound();
   }, [justCompleted]);
 
-  async function handleAddSubtask(e: FormEvent) {
-    e.preventDefault();
+  async function submitSubtask() {
     const trimmedText = subtaskText.trim();
     if (!trimmedText || !adminToken) return;
     const trimmedResponsible = subtaskResponsible.trim();
@@ -91,6 +90,11 @@ export function TaskCard({
     setSubtaskText("");
     setSubtaskResponsible("");
     await createSubtask({ token: adminToken, taskId: task._id, name });
+  }
+
+  async function handleAddSubtask(e: FormEvent) {
+    e.preventDefault();
+    await submitSubtask();
   }
 
   function handleToggleSubtask(subtask: Doc<"subtasks">) {
@@ -332,21 +336,40 @@ export function TaskCard({
               hidden={!isAdmin}
               className="mt-1 flex flex-col gap-1.5 border-t border-border-strong/60 pt-2"
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center text-ink-tertiary">
                   <PlusIcon className="h-4 w-4" />
                 </span>
                 <input
                   value={subtaskText}
                   onChange={(e) => setSubtaskText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && subtaskText.trim()) {
+                      e.preventDefault();
+                      void submitSubtask();
+                    }
+                  }}
                   placeholder="Añadir subtarea"
                   className="flex-1 bg-transparent py-1.5 text-[14px] text-ink outline-none placeholder:text-ink-tertiary"
                 />
+                <button
+                  type="submit"
+                  disabled={!subtaskText.trim() || !adminToken}
+                  className="shrink-0 rounded-lg bg-accent px-2.5 py-1.5 text-[12px] font-medium text-white transition-[transform,background-color,opacity] duration-150 ease-out hover:bg-accent-hover active:scale-[0.97] disabled:pointer-events-none disabled:opacity-40"
+                >
+                  Añadir
+                </button>
               </div>
               <div className="pl-[34px]">
                 <input
                   value={subtaskResponsible}
                   onChange={(e) => setSubtaskResponsible(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && subtaskText.trim()) {
+                      e.preventDefault();
+                      void submitSubtask();
+                    }
+                  }}
                   placeholder="Responsable(s) — opcional"
                   className="w-full rounded-full bg-surface px-3 py-1 text-[12px] text-ink-secondary outline-none transition-shadow duration-150 placeholder:text-ink-tertiary focus:ring-2 focus:ring-accent/20"
                 />
